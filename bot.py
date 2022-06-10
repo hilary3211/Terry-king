@@ -5,7 +5,7 @@ import psycopg2
 import time
 
 while True:
-    time.sleep(180)
+    time.sleep(1800)
     url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
 
     parameters = {"slug": "algorand", "convert": "USD"}
