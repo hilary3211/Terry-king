@@ -56,7 +56,7 @@ while True:
         )
 
         cur = conn.cursor()
-        cur.execute("DROP TABLE IF EXISTS Datasets")
+        #cur.execute("DROP TABLE IF EXISTS Datasets")
         create_script = """ CREATE TABLE IF NOT EXISTS Datasets (
                                 id SERIAL PRIMARY KEY,
                                 Date varchar(50) NOT NULL,
