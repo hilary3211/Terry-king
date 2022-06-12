@@ -1,3 +1,9 @@
+from requests import Request, Session
+import json
+import pprint
+import psycopg2
+import time
+
 while True:
     count = 0
     price_list = []
