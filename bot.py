@@ -1,30 +1,36 @@
-from requests import Request, Session
-import json
-import pprint
-import psycopg2
-import time
-
 while True:
-    time.sleep(1800)
-    url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
+    count = 0
+    price_list = []
+    while count < 30:
+        url = "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest"
+        parameters = {"slug": "algorand", "convert": "USD"}
 
-    parameters = {"slug": "algorand", "convert": "USD"}
+        headers = {
+            "Accepts": "application/json",
+            "X-CMC_PRO_API_KEY": "977b8032-c8ff-4858-83c8-b2ba609aae13",
+        }
 
-    headers = {
-        "Accepts": "application/json",
-        "X-CMC_PRO_API_KEY": "977b8032-c8ff-4858-83c8-b2ba609aae13",
-    }
+        session = Session()
+        session.headers.update(headers)
 
-    session = Session()
-    session.headers.update(headers)
+        response = session.get(url, params=parameters)
 
-    response = session.get(url, params=parameters)
+        price = str(json.loads(response.text)["data"]["4030"]["quote"]["USD"]["price"])
+        price_list.append(price)
+        count += 1
+        time.sleep(60)
 
-    price = str(json.loads(response.text)["data"]["4030"]["quote"]["USD"]["price"])
-
-    cleaned_price = price.replace("None", "")
-    print(cleaned_price)
-    new_price = str(cleaned_price)
+    time_stamp = str(json.loads(response.text)["status"]["timestamp"])
+    market_cap = str(
+        json.loads(response.text)["data"]["4030"]["quote"]["USD"]["market_cap"]
+    )
+    volume = str(
+        json.loads(response.text)["data"]["4030"]["quote"]["USD"]["volume_24h"]
+    )
+    open = price_list[0]
+    high = max(price_list)
+    low = min(price_list)
+    close = price_list[29]
 
     hostname = "ec2-3-218-171-44.compute-1.amazonaws.com"
     database = "d8d58ci3of9cec"
@@ -44,18 +50,24 @@ while True:
         )
 
         cur = conn.cursor()
-        # cur.execute("DROP TABLE IF EXISTS Datasets")
+        cur.execute("DROP TABLE IF EXISTS Datasets")
         create_script = """ CREATE TABLE IF NOT EXISTS Datasets (
                                 id SERIAL PRIMARY KEY,
-                                Filecoin varchar(50) NOT NULL)                        
+                                Date varchar(50) NOT NULL,
+                                Open varchar(100) NOT NULL,
+                                High varchar(100) NOT NULL,
+                                Low varchar(100) NOT NULL,
+                                Close varchar(50) NOT NULL,
+                                Volume varchar(100) NOT NULL,
+                                Market_cap varchar(100) NOT NULL)                     
         """
 
         cur.execute(create_script)
 
-        insert_sc = "INSERT INTO Datasets (Filecoin) VALUES (%s) "
-        insert_val = new_price
+        insert_sc = "INSERT INTO Datasets (Date,Open,High,Low,Close,Volume,Market_cap) VALUES (%s,%s,%s,%s,%s,%s,%s) "
+        insert_val = (time_stamp, open, high, low, close, volume, market_cap)
 
-        cur.execute(insert_sc, [insert_val])
+        cur.execute(insert_sc, insert_val)
         conn.commit()
 
     except Exception as error:
@@ -65,3 +77,4 @@ while True:
             cur.close()
         if conn is not None:
             conn.close()
+    time.sleep(1800)
